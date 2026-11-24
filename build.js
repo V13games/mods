@@ -38,14 +38,13 @@ const GAME_TEXT = {
 
 /* ---------- the logo ---------- */
 
-// A ring with a lit square in its gap, around a rounded N. `hud` adds the dotted outer ring for big sizes.
-function mark({ size = 64, cls = 'mark', color = 'currentColor', badge = false, ring = 3, n = 5, light = 6, hud = false } = {}) {
+// A ring with a small square in its gap, around a rounded N. Flat, one colour, nothing moves.
+function mark({ size = 64, cls = 'mark', color = 'currentColor', badge = false, ring = 3, n = 5, light = 6 } = {}) {
   const l = (light - 6) / 2;
   return `<svg xmlns="http://www.w3.org/2000/svg" class="${cls}" width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true">`
     + (badge ? '<rect width="64" height="64" rx="16" fill="#111816"/>' : '')
-    + (hud ? `<g class="hud"><circle cx="32" cy="32" r="29.5" fill="none" stroke="${color}" stroke-opacity=".35" stroke-width=".5" stroke-dasharray=".6 2.4"/><path d="M32 1.5v3M62.5 32h-3M32 62.5v-3M1.5 32h3" stroke="${color}" stroke-opacity=".55" stroke-width=".7"/></g>` : '')
-    + `<g class="ring"><circle cx="32" cy="32" r="22" fill="none" stroke="${color}" stroke-width="${ring}" stroke-linecap="round" stroke-dasharray="118.2 20" transform="rotate(-19 32 32)"/>`
-    + `<rect class="light" x="${44.56 - l}" y="${13.44 - l}" width="${light}" height="${light}" rx="${light / 4}" fill="${color}"/></g>`
+    + `<circle cx="32" cy="32" r="22" fill="none" stroke="${color}" stroke-width="${ring}" stroke-linecap="round" stroke-dasharray="118.2 20" transform="rotate(-19 32 32)"/>`
+    + `<rect x="${44.56 - l}" y="${13.44 - l}" width="${light}" height="${light}" rx="${light / 4}" fill="${color}"/>`
     + `<path d="M23 43V21l18 22V21" fill="none" stroke="${color}" stroke-width="${n}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 const ICON = 'data:image/svg+xml,' + encodeURIComponent(mark({ cls: '', color: '#bfffa8', badge: true, ring: 4.5, n: 6.5, light: 7.5 }));
@@ -338,32 +337,30 @@ ${footer(root)}
 
 function header(root, active) {
   return `  <header class="wrap nav">
-    <a class="brand" href="${root || './'}">${mark({ size: 30 })}<span>${esc(S.name)}</span></a>
+    <a class="brand" href="${root || './'}">${mark({ size: 28 })}<span>${esc(S.name)}</span></a>
     <div class="nav-links">
-      <button type="button" class="search-btn" data-search aria-label="Search everything (press /)">${svg(14, SEARCH)}<span class="wide-only">Search</span><kbd>/</kbd></button>
-      ${S.inviteUrl ? `<a class="go" href="${esc(S.inviteUrl)}"><span class="wide-only">Join </span>Discord</a>` : ''}
+      <button type="button" class="search-btn" data-search aria-label="Search (press /)">${svg(14, SEARCH)}<span class="wide-only">Search</span></button>
+      ${S.inviteUrl ? `<a href="${esc(S.inviteUrl)}">Discord</a>` : ''}
     </div>
   </header>
   <nav class="tabs-bar" aria-label="Sections">
     <div class="wrap tabs">
-${tabs().map(t => `      <a class="tab${t.url ? ' ext' : ''}" href="${esc(tabHref(t, root))}"${t.id === active ? ' aria-current="page"' : ''}>${t.color ? `<i style="--c:${esc(t.color)}"></i>` : ''}${esc(t.label)}${t.count != null ? ` <span>${t.count}</span>` : ''}${t.games ? ' <span data-games-count hidden></span>' : ''}</a>`).join('\n')}
+${tabs().map(t => `      <a class="tab${t.url ? ' ext' : ''}" href="${esc(tabHref(t, root))}"${t.id === active ? ' aria-current="page"' : ''}>${esc(t.label)}${t.count != null ? ` <span>${t.count}</span>` : ''}${t.games ? ' <span data-games-count hidden></span>' : ''}</a>`).join('\n')}
     </div>
   </nav>`;
 }
 
 function footer(root) {
   return `  <footer class="foot">
-    <div class="wrap">
-      <div class="foot-top">
-        <p>© ${YEAR} ${esc(S.name)}</p>
-        <nav class="foot-links" aria-label="More">
-${tabs().map(t => `          <a href="${esc(tabHref(t, root))}">${esc(t.label)}</a>`).join('\n')}
-          ${S.games_site ? `<a href="${esc(S.games_site)}">Games site ↗</a>` : ''}
-          <a href="#">Back to top</a>
-        </nav>
-      </div>
+    <div class="wrap foot-top">
+      <p class="foot-brand">${mark({ size: 22 })}${esc(S.name)}</p>
+      <nav class="foot-links" aria-label="More">
+${tabs().map(t => `        <a href="${esc(tabHref(t, root))}">${esc(t.label)}</a>`).join('\n')}
+        ${S.games_site ? `<a href="${esc(S.games_site)}">Games site ↗</a>` : ''}
+        <a href="#">Top ↑</a>
+      </nav>
+      <p>© ${YEAR}</p>
     </div>
-    <p class="giant" aria-hidden="true"><span data-fit style="--len:7">Neutral</span></p>
   </footer>`;
 }
 
@@ -384,7 +381,7 @@ function fitSize(text) {
   return 5;
 }
 function genCover(text, left, right) {
-  return `<div class="frame gen gen-bg" aria-hidden="true"><i>${esc(left)}</i>${right ? `<i>${esc(right)}</i>` : ''}<b style="font-size:${fitSize(text)}cqi">${esc(text)}</b></div>`;
+  return `<div class="frame gen" aria-hidden="true"><i>${esc(left)}</i>${right ? `<i>${esc(right)}</i>` : ''}<b style="font-size:${fitSize(text)}cqi">${esc(text)}</b></div>`;
 }
 function frame(m, root) {
   if (m.cover.length > 1) return `<div class="frame collage">${m.cover.slice(0, 4).map(c => `<img src="${esc(href(c, root))}" alt="" loading="lazy">`).join('')}</div>`;
@@ -421,20 +418,19 @@ function soonCard(c, root) {
           ${genCover(c.name, c.name, 'Soon')}
           <div class="meta">
             <span class="no">Soon / ${esc(c.name)}</span>
-            <h3><a class="card-link" href="${root}${c.slug}/">${esc(c.name)} releases</a></h3>
-            <p class="sum">On their way. ${S.inviteUrl ? 'Join the Discord to hear first.' : 'Keep an eye on the posts.'}</p>
+            <h3><a class="card-link" href="${root}${c.slug}/">${esc(c.name)}</a></h3>
+            <p class="sum">Coming soon.</p>
           </div>
         </article>`;
 }
 
 function soonBox(c, root) {
   return `      <div class="soon-box">
-        ${mark({ size: 72 })}
-        <p class="big-lede">The first ${esc(c.name)} release is on its way.</p>
-        <p class="note">${S.inviteUrl ? 'The Discord hears about it first, so that is the place to be.' : 'It will show up right here, and in the posts.'}</p>
+        <p class="big-lede">Nothing here yet.</p>
+        <p class="note">The first ${esc(c.name)} release is coming soon.${S.inviteUrl ? ' It gets announced on the Discord first.' : ''}</p>
         <div class="play-row">
-          ${S.inviteUrl ? `<a class="btn" href="${esc(S.inviteUrl)}">${svg(14, OUTLINK)}Join the Discord</a>` : ''}
-          ${S.games_site ? `<a class="btn ghost" href="${root}games/">Play games meanwhile</a>` : ''}
+          ${S.inviteUrl ? `<a class="btn" href="${esc(S.inviteUrl)}">Discord</a>` : ''}
+          ${S.games_site ? `<a class="btn ghost" href="${root}games/">Games</a>` : ''}
         </div>
       </div>`;
 }
@@ -455,23 +451,21 @@ function joinBox() {
   return `    <section class="wrap section" id="discord" aria-labelledby="discord-title">
       <div class="join-box">
         <div>
-          <h2 class="label" id="discord-title"><i class="dot" aria-hidden="true"></i>Discord</h2>
-          <p class="big-lede">${esc(S.join_text || 'New releases, updates and help all happen on the Discord. Come say hi.')}</p>
-          <p class="stats" data-online hidden><span class="stat-live"><b data-n="online">0</b> online</span><span><b data-n="members">0</b> members</span></p>
+          <h2 class="label" id="discord-title">Discord</h2>
+          <p>${esc(S.join_text || 'Releases, updates and help are posted on the Discord first.')}</p>
+          <p class="stats" data-online hidden><span><b data-n="online">0</b> online</span><span><b data-n="members">0</b> members</span></p>
         </div>
-        <a class="btn big" href="${esc(S.inviteUrl)}">${svg(14, OUTLINK)}Join the Discord</a>
+        <a class="btn big" href="${esc(S.inviteUrl)}">Join the Discord</a>
       </div>
     </section>`;
 }
 
 function pageHero({ name, color, label, text, buttons = '' }) {
-  return `    <section class="wrap">
-      <div class="page-hero gen-bg" style="--game:${esc(color)}">
-        <p class="label"><i class="sq" aria-hidden="true"></i>${esc(name)} <span class="dim">/ ${esc(label)}</span></p>
-        <h1 class="giant"><span data-fit style="--len:${Math.max(name.length, 4)}">${esc(name)}</span></h1>
-        <p class="page-sub">${esc(text)}</p>
-        ${buttons ? `<div class="play-row">${buttons}</div>` : ''}
-      </div>
+  return `    <section class="wrap page-head" style="--game:${esc(color)}">
+      <p class="label"><i class="sq" aria-hidden="true"></i>${esc(name)} <span class="dim">/ ${esc(label)}</span></p>
+      <h1 class="giant"><span data-fit style="--len:${Math.max(name.length, 4)}">${esc(name)}</span></h1>
+      <p class="page-sub">${esc(text)}</p>
+      ${buttons ? `<div class="play-row">${buttons}</div>` : ''}
     </section>`;
 }
 
@@ -479,58 +473,24 @@ function pageHero({ name, color, label, text, buttons = '' }) {
 
 function home() {
   const root = '';
-  const madeFor = gameCats.length ? `${gameCats.map(c => c.name).slice(0, 3).join(', ')} and more` : 'and more';
-  const tiles = [
-    ...gameCats.map(c => ({ to: c.slug + '/', name: c.name, color: c.color, n: c.mods.length, sub: c.mods.length ? plural(c.mods.length, 'release', 'releases') : 'Coming soon' })),
-    S.games_site && { to: 'games/', name: 'Games', color: GAME_COLORS.games, n: '', games: true, sub: 'Free in your browser' },
-    { to: 'posts/', name: 'Posts', color: GAME_COLORS.posts, n: posts.length, sub: posts[0] ? `Latest: ${fmtDate(posts[0].date)}` : 'News and updates' },
-    S.inviteUrl && { url: S.inviteUrl, name: 'Discord', color: '#8c9eff', n: '', online: true, sub: 'Chat, help and drops' },
-  ].filter(Boolean);
-  const tile = t => `        <a class="tile" href="${esc(t.url || t.to)}" style="--c:${esc(t.color)}">
-          <span class="tile-top"><i aria-hidden="true"></i>${esc(t.name)}</span>
-          <b${t.games ? ' data-games-count' : ''}>${t.online ? '<span data-n="online">&nbsp;</span>' : t.n === '' ? '&nbsp;' : t.n}</b>
-          <span class="tile-sub">${t.online ? '<span data-online hidden>online now · </span>' : ''}${esc(t.sub)}</span>
-          <span class="tile-go" aria-hidden="true">${t.url ? '↗' : '→'}</span>
-        </a>`;
   const missing = gameCats.filter(c => !c.mods.length);
-  const stats = [
-    ...gameCats.map(c => `<li><a href="${c.slug}/" style="--c:${esc(c.color)}"><i></i>${esc(c.name)} <b>${c.mods.length}</b></a></li>`),
-    S.games_site ? `<li><a href="games/" style="--c:${GAME_COLORS.games}"><i></i>Games <b data-games-count>…</b></a></li>` : '',
-    S.inviteUrl ? `<li data-online hidden><a href="${esc(S.inviteUrl)}"><i></i>Online on Discord <b data-n="online">0</b></a></li>` : '',
-  ].filter(Boolean).join('');
-
   const body = `  <main>
-    <section class="wrap" aria-label="Welcome">
-      <div class="hero">
-        <canvas class="rain" aria-hidden="true"></canvas>
-        <div>
-          <p class="label hero-kicker"><i class="dot" aria-hidden="true"></i>${esc(S.name)}<span class="dim"> / ${esc(S.kicker || 'Discord community')}</span></p>
-          <h1 class="hero-title">${esc(S.headline || 'Mods, plugins')}<br><em>${esc(S.headline_2 || '& games')}</em></h1>
-          <p class="hero-sub">${esc(S.tagline || `Made by ${S.name} for ${madeFor}. Look around, grab what you like, and say hi on the Discord.`)}</p>
-          <div class="play-row">
-            <a class="btn big" href="#releases">Browse releases</a>
-            ${S.games_site ? `<a class="btn ghost big" href="games/">${PLAY}Play games</a>` : ''}
-            ${S.inviteUrl ? `<a class="btn ghost big" href="${esc(S.inviteUrl)}">${svg(14, OUTLINK)}Join Discord</a>` : ''}
-          </div>
+    <section class="wrap intro" aria-label="${esc(S.name)}">
+      <p class="label">Project</p>
+      <h1 class="giant"><span class="sr-only">${esc(S.name)}</span><span data-fit aria-hidden="true" style="--len:7">Neutral</span></h1>
+      <div class="intro-row">
+        <p>${esc(S.tagline || 'Mods and plugins for FiveM and Minecraft, and free games you play in your browser.')}</p>
+        <div class="play-row">
+          <a class="btn" href="#releases">Releases</a>
+          ${S.games_site ? `<a class="btn ghost" href="games/">Games</a>` : ''}
+          ${S.inviteUrl ? `<a class="btn ghost" href="${esc(S.inviteUrl)}">Discord</a>` : ''}
         </div>
-        ${mark({ size: 340, cls: 'mark hero-mark', hud: true })}
-        <ul class="hero-stats">${stats}</ul>
-      </div>
-    </section>
-
-    <section class="wrap section" aria-labelledby="look-title">
-      <div class="title-row">
-        <h2 id="look-title"><span>//</span>Look around</h2>
-        <p class="label dim">Tip: press <kbd>/</kbd> to search everything</p>
-      </div>
-      <div class="tiles">
-${tiles.map(tile).join('\n')}
       </div>
     </section>
 
     <section class="wrap section" id="releases" aria-labelledby="releases-title">
       <div class="title-row">
-        <h2 id="releases-title"><span>//</span>Latest releases</h2>
+        <h2 id="releases-title"><span>//</span>Releases</h2>
         <div class="chips" role="group" aria-label="Filter">
           <button type="button" class="chip tag-chip" id="tag-chip" hidden>#<b></b> <i aria-hidden="true">×</i></button>
         </div>
@@ -557,7 +517,7 @@ ${skeletons(4)}
 ` : ''}
     <section class="wrap section" id="posts" aria-labelledby="posts-title">
       <div class="title-row">
-        <h2 id="posts-title"><span>//</span>Latest posts</h2>
+        <h2 id="posts-title"><span>//</span>Posts</h2>
         <a class="see-all label" href="posts/">All posts &rarr;</a>
       </div>
 ${feed(posts.slice(0, 4), root)}
@@ -621,7 +581,7 @@ function modPage(m) {
   const facts = [m.version && `Version ${m.version}`, m.updated && `updated ${fmtDate(m.updated) || m.updated}`].filter(Boolean).join(', ');
   const body = `  <main>
     <div class="wrap">
-      <section class="ghero${m.cover.length ? '' : ' gen-bg'}">
+      <section class="ghero${m.cover.length ? '' : ' plain'}">
         ${m.cover.length ? `<img class="ghero-img" src="${esc(href(m.cover[0], root))}" width="1600" height="900" alt="${esc(m.alt || m.title)}" fetchpriority="high">` : ''}
         <nav class="wrap crumbs label" aria-label="You are here">
           <ol><li><a href="../">Home</a></li><li><a href="${catHref}">${esc(m.game)}</a></li><li aria-current="page">${esc(m.title)}</li></ol>
@@ -662,7 +622,7 @@ ${markdown(m.body, root, { sections: true, firstHeading: `About ${m.title}` })}
         </section>` : ''}
         ${S.inviteUrl ? `<section class="panel" aria-labelledby="help-title">
           <h2 id="help-title">Need help?</h2>
-          <p>Ask on the Discord: questions, bugs and ideas for ${esc(m.title)} are all welcome there.</p>
+          <p>Questions, bugs and ideas for ${esc(m.title)} go in the Discord.</p>
           <a class="btn ghost wide" href="${esc(S.inviteUrl)}">Join the Discord</a>
         </section>` : ''}
       </aside>
@@ -690,7 +650,7 @@ function postPage(p, i) {
   const root = '../../';
   const prev = posts[i + 1], next = posts[i - 1];
   const body = `  <main>
-    <nav class="wrap crumbs label" aria-label="You are here" style="padding-top:clamp(18px,2.4vw,28px)">
+    <nav class="wrap crumbs label page-crumbs" aria-label="You are here">
       <ol><li><a href="../../">Home</a></li><li><a href="../">Posts</a></li><li aria-current="page">${esc(p.title)}</li></ol>
     </nav>
     <article class="wrap post">

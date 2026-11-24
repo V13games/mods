@@ -1,5 +1,5 @@
-// Shared by every page: giant words that fit the width, the green code raining behind the banner, the tag filter,
-// the games read live from the games site, the search box (press / or Ctrl+K), and the live Discord numbers.
+// Shared by every page: giant words that fit the width, the tag filter, the games read live from the games site,
+// the search box (press / or Ctrl+K), and the live Discord numbers.
 (function () {
   var html = document.documentElement;
   var ROOT = html.getAttribute('data-root') || './';
@@ -24,54 +24,6 @@
     fit();
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { words.forEach(function (w) { w._room = 0; }); fit(); });
     window.addEventListener('resize', fit);
-  })();
-
-  // Green code raining behind the banner. Calm, and it stops when the banner is off screen.
-  (function () {
-    var c = document.querySelector('canvas.rain');
-    if (!c || !c.getContext) return;
-    var ctx = c.getContext('2d');
-    var glyphs = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ0123456789NEUTRAL<>/+=*';
-    var size = 16, w = 0, h = 0, drops = [], last = 0, on = true;
-    function resize() {
-      var dpr = Math.min(window.devicePixelRatio || 1, 2);
-      w = c.clientWidth; h = c.clientHeight;
-      c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      drops = [];
-      for (var i = 0; i < Math.ceil(w / size); i++) drops.push({ y: Math.random() * -h / size * 1.5, v: 0.35 + Math.random() * 0.6 });
-    }
-    function step() {
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.fillStyle = 'rgba(0,0,0,.085)';
-      ctx.fillRect(0, 0, w, h);
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.font = '500 ' + (size - 3) + 'px "Geist Mono", ui-monospace, monospace';
-      for (var i = 0; i < drops.length; i++) {
-        var d = drops[i];
-        if (d.y * size > h + 60 && Math.random() > 0.97) { d.y = -Math.random() * 12; d.v = 0.35 + Math.random() * 0.6; }
-        ctx.fillStyle = Math.random() > 0.94 ? 'rgba(255,255,250,.9)' : 'rgba(191,255,168,' + (0.3 + Math.random() * 0.45).toFixed(2) + ')';
-        ctx.fillText(glyphs.charAt((Math.random() * glyphs.length) | 0), i * size + 2, d.y * size);
-        d.y += d.v;
-      }
-    }
-    function loop(t) {
-      if (!on) return;
-      requestAnimationFrame(loop);
-      if (t - last < 55) return;
-      last = t;
-      step();
-    }
-    resize();
-    if (still) { for (var k = 0; k < 90; k++) step(); return; }
-    for (var j = 0; j < 40; j++) step(); // start with some rain already falling
-    var resizeTimer;
-    window.addEventListener('resize', function () { clearTimeout(resizeTimer); resizeTimer = setTimeout(function () { resize(); for (var j = 0; j < 40; j++) step(); }, 150); });
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver(function (e) { var was = on; on = e[0].isIntersecting && !document.hidden; if (on && !was) requestAnimationFrame(loop); }).observe(c);
-    }
-    document.addEventListener('visibilitychange', function () { var was = on; on = !document.hidden; if (on && !was) requestAnimationFrame(loop); });
-    requestAnimationFrame(loop);
   })();
 
   // The tag filter on the front page (from a mod page's #tag links). Kept in the address so it can be shared.
@@ -157,9 +109,9 @@
       box.className = 'palette';
       box.hidden = true;
       box.innerHTML = '<div class="palette-box" role="dialog" aria-modal="true" aria-label="Search">'
-        + '<div class="palette-in"><span aria-hidden="true">&gt;</span><input type="search" placeholder="Search mods, games, posts…" aria-label="Search" aria-controls="palette-list" autocomplete="off" spellcheck="false"><kbd>Esc</kbd></div>'
+        + '<div class="palette-in"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13ZM15.5 15.5 21 21" fill="none" stroke="currentColor" stroke-width="2.2"/></svg><input type="search" placeholder="Search" aria-label="Search" aria-controls="palette-list" autocomplete="off" spellcheck="false"><kbd>Esc</kbd></div>'
         + '<ul class="palette-list" id="palette-list" role="listbox"></ul>'
-        + '<p class="palette-foot"><span><kbd>↑</kbd> <kbd>↓</kbd> move</span><span><kbd>Enter</kbd> open</span><span><kbd>Esc</kbd> close</span></p></div>';
+        + '</div>';
       document.body.appendChild(box);
       input = box.querySelector('input');
       listEl = box.querySelector('.palette-list');
@@ -199,7 +151,6 @@
         g[1].forEach(function (x) {
           var i = items.push(x) - 1, ext = /^https?:/.test(x.u) && x.k !== 'Game';
           out += '<li role="option" data-i="' + i + '" aria-selected="false"><a href="' + escapeHtml(link(x.u)) + '"' + (ext ? ' target="_blank" rel="noopener"' : '') + '>'
-            + '<i style="--c:' + escapeHtml(x.c || '#bfffa8') + '" aria-hidden="true"></i>'
             + '<span><b>' + escapeHtml(x.t) + (ext ? ' ↗' : '') + '</b>' + (x.d ? '<small>' + escapeHtml(x.d) + '</small>' : '') + '</span>'
             + '<em>' + escapeHtml(x.k) + '</em></a></li>';
         });

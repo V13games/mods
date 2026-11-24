@@ -41,13 +41,16 @@ With the invite filled in, the site gets **Join Discord** buttons and shows how 
 
 ## Logo and banner
 
-In `content/images/brand`:
+In `brand/social`:
 
-- `icon-512.png`: the logo. Use it as the Discord server icon and the bot's picture (Discord crops it to a circle, and it's made for that).
-- `banner.png`: 1600×900. Shown when the site is shared on Discord, and fits as a Discord server banner.
-- `logo.svg`: the logo as a sharp vector file, for anything else.
+- `discord-icon.png` (512×512): Discord server icon, and the bot's picture.
+- `discord-banner.png` (1920×1080): Discord server banner.
+- `youtube-icon.png` (800×800): YouTube profile picture.
+- `youtube-banner.png` (2560×1440): YouTube banner. The logo and name sit in the middle strip every device shows.
 
-They are made from `brand/icon.html` and `brand/banner.html`. After changing one, run
+The website uses `content/images/brand/icon-512.png`, `banner.png` (the picture when the site is shared) and `logo.svg`.
+
+They are all made from `brand/icon.html` and `brand/banner.html`. After changing one, run
 `powershell -ExecutionPolicy Bypass -File brand\make-images.ps1` to make the pictures again.
 
 ## Files starting with `_`

@@ -11,14 +11,11 @@ description: Mods, plugins and games for FiveM, Minecraft and more, made by Proj
 # With this filled in, the site gets Join Discord buttons and shows how many people are online.
 discord:
 
-# The banner at the top of the front page: the small line, the two big lines, and the sentence under them.
-kicker: Discord community
-headline: Mods, plugins
-headline_2: & games
-tagline: Made by Project Neutral for FiveM, Minecraft and more. Look around, grab what you like, and say hi on the Discord.
+# The line under the big NEUTRAL on the front page.
+tagline: Mods and plugins for FiveM and Minecraft, and free games you play in your browser.
 
 # The text in the Discord box.
-join_text: New releases, updates and help all happen on the Discord. Come say hi.
+join_text: Releases, updates and help are posted on the Discord first.
 
 # Your games site. It gets its own Games tab, with every game read live from it.
 games_site: https://v13games.github.io/
@@ -31,7 +28,7 @@ categories: FiveM, Minecraft, Other
 fivem_text: Scripts and resources for FiveM servers.
 minecraft_text: Plugins and mods for Minecraft servers and worlds.
 other_text: Everything else Project Neutral makes.
-games_text: Free games you play in your browser. Nothing to install. Tap one to play.
+games_text: Free games you play in your browser. Nothing to install.
 
 # Where this site lives. Only change it if the site moves.
 url: https://v13games.github.io/mods/
