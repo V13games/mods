@@ -61,3 +61,14 @@ They are examples and are never on the site. Keep them to copy from.
 
 With Node installed: `node build.js --serve`, then open http://localhost:8080.
 Add `--examples` to see the example mods and post too.
+
+## Accounts and the Admin page
+
+People can log in with GitHub or Google (top right, **Log in**). The owner and admins also get **Admin**: write a
+message, pick a channel, and the Project Neutral bot posts it on the Discord with the banner at the end.
+
+- Logins and accounts are run by Supabase. The website only needs `supabase_url` and `supabase_key` in `content/settings.yml`.
+- `supabase/setup.sql` makes the accounts tables. The GitHub account **V13games** becomes owner the first time it logs in.
+- `supabase/functions/discord` is the bot code. Its secrets (the bot token) live in Supabase, never in this project.
+- To make someone an admin, run this in Supabase's SQL Editor:
+  `update public.profiles set role = 'admin' where github_login = 'their-github-name';`

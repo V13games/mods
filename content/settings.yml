@@ -30,5 +30,12 @@ minecraft_text: Plugins and mods for Minecraft servers and worlds.
 other_text: Everything else Project Neutral makes.
 games_text: Free games you play in your browser. Nothing to install.
 
+# Accounts (log in with GitHub or Google) and the Admin page, run by Supabase.
+# Both come from Supabase: Project Settings > API (the Project URL, and the publishable or anon key).
+# These are made to be public. Never put a secret key here.
+# While these are empty, there is no Log in link.
+supabase_url:
+supabase_key:
+
 # Where this site lives. Only change it if the site moves.
 url: https://v13games.github.io/mods/

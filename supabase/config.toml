@@ -1,0 +1,6 @@
+# Supabase settings for deploying the bot code (supabase functions deploy discord).
+project_id = "project-neutral"
+
+[functions.discord]
+# The function checks the login itself (and that the account is an owner or admin).
+verify_jwt = false

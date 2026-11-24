@@ -96,6 +96,9 @@ if (S.discord) {
   S.inviteUrl = /^https?:\/\//i.test(S.discord) ? S.discord : 'https://discord.gg/' + S.discord.replace(/^.*\//, '');
   S.inviteCode = S.inviteUrl.replace(/[?#].*$/, '').replace(/\/+$/, '').split('/').pop();
 }
+// Accounts (log in with GitHub or Google) are on once both Supabase settings are filled in.
+S.supabase_url = (S.supabase_url || '').replace(/\/+$/, '');
+const ACCOUNTS = !!(S.supabase_url && S.supabase_key);
 
 // A link from a content file: web addresses stay as they are, site files get the right ../ in front.
 function href(u, root) {
@@ -118,7 +121,7 @@ for (const { meta } of rawMods) { // a mod for a game that isn't listed yet adds
   if (categories.includes('Other')) categories.splice(categories.indexOf('Other'), 0, g); else categories.push(g);
 }
 const catSlug = c => slugify(c);
-const RESERVED = new Set(['posts', 'images', 'games', 'site.css', 'site.js', 'search-index.js', 'index.html', '404.html', ...categories.map(catSlug)]);
+const RESERVED = new Set(['posts', 'images', 'games', 'account', 'admin', 'site.css', 'site.js', 'account.js', 'search-index.js', 'index.html', '404.html', ...categories.map(catSlug)]);
 const used = new Set();
 const mods = rawMods.map(({ file, example, meta, body }) => {
   const base = file.replace(/\.md$/i, '').replace(/^_+/, '');
@@ -298,11 +301,17 @@ function tabs() {
 }
 const tabHref = (t, root) => t.url || (root + t.to) || './';
 
-function page({ root, title, description, at, image, body, tab, style = '' }) {
+function page({ root, title, description, at, image, body, tab, style = '', auth = '' }) {
   const full = title ? `${title} · ${S.name}` : S.name;
   const desc = description || S.description || '';
   const img = absolute(image || DEFAULT_IMAGE || '');
-  const attrs = [`data-root="${esc(root || './')}"`, S.inviteCode && `data-invite="${esc(S.inviteCode)}"`, S.games_site && `data-games="${esc(S.games_site)}"`, style && `style="${esc(style)}"`].filter(Boolean).join(' ');
+  const attrs = [
+    `data-root="${esc(root || './')}"`,
+    S.inviteCode && `data-invite="${esc(S.inviteCode)}"`,
+    S.games_site && `data-games="${esc(S.games_site)}"`,
+    auth && ACCOUNTS && `data-sb-url="${esc(S.supabase_url)}" data-sb-key="${esc(S.supabase_key)}"`,
+    style && `style="${esc(style)}"`,
+  ].filter(Boolean).join(' ');
   return `<!doctype html>
 <html lang="en" ${attrs}>
 <head>
@@ -322,15 +331,15 @@ ${(image || DEFAULT_IMAGE) ? `<meta property="og:image" content="${esc(img)}">\n
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@200;400;500;700&family=Inter+Tight:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="${root}site.css">
-</head>
-<body>
+${auth ? '<meta name="robots" content="noindex">\n' : ''}</head>
+<body${auth ? ` data-page="${auth}"` : ''}>
   <!-- This page is made by build.js from the files in the content folder. Change those, not this. -->
 ${header(root, tab)}
 ${body}
 ${footer(root)}
   <script src="${root}search-index.js" defer></script>
   <script src="${root}site.js" defer></script>
-</body>
+${auth ? `  <script type="module" src="${root}account.js"></script>\n` : ''}</body>
 </html>
 `;
 }
@@ -340,7 +349,9 @@ function header(root, active) {
     <a class="brand" href="${root || './'}">${mark({ size: 28 })}<span>${esc(S.name)}</span></a>
     <div class="nav-links">
       <button type="button" class="search-btn" data-search aria-label="Search (press /)">${svg(14, SEARCH)}<span class="wide-only">Search</span></button>
-      ${S.inviteUrl ? `<a href="${esc(S.inviteUrl)}">Discord</a>` : ''}
+      ${S.inviteUrl ? `<a class="wide-only" href="${esc(S.inviteUrl)}">Discord</a>` : ''}
+      ${ACCOUNTS ? `<a href="${root}admin/" data-admin-link hidden>Admin</a>
+      <a href="${root}account/" data-account-link>Log in</a>` : ''}
     </div>
   </header>
   <nav class="tabs-bar" aria-label="Sections">
@@ -684,6 +695,114 @@ ${feed(posts, root)}
   return page({ root, at: 'posts/', tab: 'posts', title: 'Posts', description: `News and updates from ${S.name}.`, body });
 }
 
+// Log in with GitHub or Google, and see your account. account.js does the work in the browser.
+const GITHUB_ICON = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>';
+const GOOGLE_ICON = '<svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
+
+function accountPage() {
+  const root = '../';
+  const body = `  <main>
+${pageHero({ name: 'Account', color: GAME_COLORS.other, label: 'GitHub or Google', text: `Your ${S.name} account.` })}
+    <section class="wrap section" aria-label="Your account">
+      <div class="acct" data-state="loading"><p class="note">Loading…</p></div>
+      <div class="acct" data-state="off" hidden>
+        <p class="big-lede">Accounts aren't switched on yet.</p>
+        <p class="note">They will be soon.</p>
+      </div>
+      <div class="acct" data-state="error" hidden>
+        <p class="big-lede">Something went wrong.</p>
+        <p class="note">Try again in a moment, or log in again.</p>
+        <div class="play-row"><button type="button" class="btn ghost" data-logout>Log out</button></div>
+      </div>
+      <div class="acct" data-state="out" hidden>
+        <p class="big-lede">Log in or make an account</p>
+        <p class="note">Use GitHub or Google. The first time you log in, your account is made.</p>
+        <div class="play-row">
+          <button type="button" class="btn big" data-login="github">${GITHUB_ICON}Continue with GitHub</button>
+          <button type="button" class="btn ghost big" data-login="google">${GOOGLE_ICON}Continue with Google</button>
+        </div>
+        <p class="note send-status" data-login-status></p>
+      </div>
+      <div class="acct" data-state="in" hidden>
+        <div class="me">
+          <img data-me-avatar width="64" height="64" alt="" hidden referrerpolicy="no-referrer">
+          <div>
+            <p class="me-name" data-me-name></p>
+            <p class="label"><span class="role" data-me-role></span> <span class="dim">/ logged in with <span data-me-provider></span></span></p>
+          </div>
+        </div>
+        <div class="play-row">
+          <a class="btn" href="../admin/" data-admin-only hidden>Admin</a>
+          <button type="button" class="btn ghost" data-logout>Log out</button>
+        </div>
+      </div>
+    </section>
+  </main>
+`;
+  return page({ root, at: 'account/', tab: 'account', title: 'Account', description: `Log in to your ${S.name} account.`, body, auth: 'account' });
+}
+
+// Owners and admins: write a message and send it to a Discord channel as the bot, with the banner at the end.
+function adminPage() {
+  const root = '../';
+  const body = `  <main>
+${pageHero({ name: 'Admin', color: GAME_COLORS.other, label: 'owner and admins', text: 'Write a message, pick a channel, and the Project Neutral bot posts it on the Discord with the banner at the end.' })}
+    <section class="wrap section" aria-label="Send to Discord">
+      <div class="acct" data-state="loading"><p class="note">Loading…</p></div>
+      <div class="acct" data-state="error" hidden>
+        <p class="big-lede">Something went wrong.</p>
+        <p class="note">Try again in a moment.</p>
+      </div>
+      <div class="acct" data-state="out" hidden>
+        <p class="big-lede">Log in first.</p>
+        <div class="play-row"><a class="btn" href="../account/">Log in</a></div>
+      </div>
+      <div class="acct" data-state="denied" hidden>
+        <p class="big-lede">Only the owner and admins can use this page.</p>
+        <div class="play-row"><a class="btn ghost" href="../account/">Your account</a></div>
+      </div>
+      <div data-state="admin" hidden>
+        <p class="demo-note" data-demo hidden>Preview only. Accounts aren't switched on yet, so nothing gets sent.</p>
+        <div class="admin-grid">
+          <form id="composer" class="composer">
+            <label class="field"><span class="label">Channel <span class="dim" data-server></span></span>
+              <select name="channel" required><option>Loading channels…</option></select>
+            </label>
+            <label class="field"><span class="label">Message</span>
+              <textarea name="content" rows="9" maxlength="2000" placeholder="Write your message. **Bold**, *italics* and links work like on Discord."></textarea>
+              <span class="count label dim" data-count>0 / 2000</span>
+            </label>
+            <div class="checks">
+              <label class="check"><input type="checkbox" name="banner" checked> Banner at the end</label>
+              <label class="check"><input type="checkbox" name="ping"> Ping @everyone</label>
+            </div>
+            <div class="play-row">
+              <button type="submit" class="btn big">Send to Discord</button>
+              <span class="label dim">Ctrl + Enter</span>
+            </div>
+            <p class="send-status" data-send-status aria-live="polite"></p>
+          </form>
+          <aside class="side">
+            <p class="label">Preview</p>
+            <div class="preview">
+              <img class="preview-av" src="../images/brand/icon-512.png" width="40" height="40" alt="">
+              <div class="preview-body">
+                <p class="preview-head"><b>Project Neutral</b> <span class="bot-tag">Bot</span></p>
+                <div class="preview-text" data-preview-text></div>
+                <img class="preview-banner" data-preview-banner src="../images/brand/banner.png" alt="">
+              </div>
+            </div>
+            <p class="label side-title">Sent lately</p>
+            <ol class="recent" data-recent><li class="dim">Nothing sent yet.</li></ol>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+`;
+  return page({ root, at: 'admin/', tab: 'admin', title: 'Admin', description: 'Owner and admins only.', body, auth: 'admin' });
+}
+
 // Everything the search box can find (games are added in the browser, read live from the games site).
 function searchIndex() {
   const items = [
@@ -694,6 +813,7 @@ function searchIndex() {
     { t: 'Posts', k: 'Tab', u: 'posts/', d: 'News and updates' },
     S.inviteUrl && { t: 'Discord', k: 'Link', u: S.inviteUrl, d: 'Join the Discord server', c: '#8c9eff' },
     S.games_site && { t: 'Games site', k: 'Link', u: S.games_site, d: S.games_site.replace(/^https?:\/\//, '') },
+    ACCOUNTS && { t: 'Account', k: 'Page', u: 'account/', d: 'Log in with GitHub or Google' },
     ...mods.map(m => ({ t: m.title, k: m.game, u: m.hasPage ? m.slug + '/' : (m.link || m.download || ''), d: [m.type, m.summary].filter(Boolean).join(' · '), c: m.color, x: m.tags.join(' ') })),
     ...posts.map(p => ({ t: p.title, k: 'Post', u: `posts/${p.slug}/`, d: `${fmtDate(p.date)} · ${p.summary}` })),
   ].filter(x => x && x.u !== undefined);
@@ -715,8 +835,10 @@ if (S.games_site) write('games/index.html', gamesPage());
 mods.filter(m => m.hasPage).forEach(m => write(`${m.slug}/index.html`, modPage(m)));
 write('posts/index.html', postsPage());
 posts.forEach((p, i) => write(`posts/${p.slug}/index.html`, postPage(p, i)));
+write('account/index.html', accountPage());
+write('admin/index.html', adminPage());
 write('search-index.js', searchIndex());
-for (const f of ['site.css', 'site.js']) fs.copyFileSync(path.join(ROOT, f), path.join(OUT, f));
+for (const f of ['site.css', 'site.js', 'account.js']) fs.copyFileSync(path.join(ROOT, f), path.join(OUT, f));
 if (fs.existsSync(path.join(CONTENT, 'images'))) fs.cpSync(path.join(CONTENT, 'images'), path.join(OUT, 'images'), { recursive: true });
 console.log(`Built ${releases.length} release(s), ${mods.length - releases.length} other link(s), ${posts.length} post(s) and ${cats.length + (S.games_site ? 1 : 0)} tab(s) into _site${EXAMPLES ? ' (examples included)' : ''}.`);
 if (!S.inviteUrl) console.log('Tip: put your Discord invite in content/settings.yml (discord: ...) to show the Join buttons.');

@@ -218,3 +218,17 @@
       .catch(function () { /* no numbers, no problem */ });
   })();
 })();
+
+// The top bar's account links: "Log in" (or "Account" once logged in), and "Admin" for the owner and admins.
+// account.js keeps a small note of who is logged in, so every page can show the right links straight away.
+(function () {
+  function paint() {
+    var me = null;
+    try { me = JSON.parse(localStorage.getItem('pn-account')); } catch (e) { /* not logged in */ }
+    [].forEach.call(document.querySelectorAll('[data-account-link]'), function (a) { a.textContent = me ? 'Account' : 'Log in'; });
+    [].forEach.call(document.querySelectorAll('[data-admin-link]'), function (a) { a.hidden = !(me && (me.role === 'owner' || me.role === 'admin')); });
+  }
+  paint();
+  window.addEventListener('pn-account', paint);
+  window.addEventListener('storage', function (e) { if (e.key === 'pn-account') paint(); });
+})();
