@@ -8,10 +8,13 @@
 
   Everything on the site comes from the content folder:
     content/settings.yml   the Discord invite, the site's name and a few other settings
-    content/mods/*.md      one file per mod or plugin, and the "Other" links (like the games site)
+    content/mods/*.md      one file per mod or plugin, and the "Other" links
     content/posts/*.md     one file per post
     content/images/        pictures; use them as   cover: images/my-picture.jpg
   Files whose name starts with _ are examples and templates, left off the real site.
+
+  The pages it makes: the front page, one tab per game (FiveM, Minecraft...), Games (read live from the
+  games site), Other, Posts, a page per mod and per post, and search-index.js for the search box.
 */
 const fs = require('fs');
 const path = require('path');
@@ -25,12 +28,32 @@ const EXAMPLES = process.argv.includes('--examples');
 const PORT = Number(process.env.PORT) || 8080;
 const YEAR = new Date().getFullYear();
 
-// The colour of each game's little square, unless a mod sets its own with  color: #rrggbb
-const GAME_COLORS = { fivem: '#ff7a3d', minecraft: '#62c46a', other: '#bfffa8' };
-const ICON = "data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20fill%3D'%23111816'%2F%3E%3Cpath%20d%3D'M2.8%208.5V2.8h5.7M23.5%202.8h5.7v5.7M29.2%2023.5v5.7h-5.7M8.5%2029.2H2.8v-5.7'%20fill%3D'none'%20stroke%3D'%23bfffa8'%20stroke-width%3D'1.6'%2F%3E%3Cpath%20d%3D'M8%2024V8h4.4l7.2%2010.6V8H24v16h-4.4l-7.2-10.6V24z'%20fill%3D'%23bfffa8'%2F%3E%3C%2Fsvg%3E";
+// Each game's colour (the little lit squares), unless settings.yml sets  fivem_color: #rrggbb  and so on.
+const GAME_COLORS = { fivem: '#ff7a3d', minecraft: '#62c46a', other: '#bfffa8', games: '#5ab8ff', posts: '#bfffa8' };
+const GAME_TEXT = {
+  fivem: 'Scripts and resources for FiveM servers.',
+  minecraft: 'Plugins and mods for Minecraft servers and worlds.',
+  other: 'Everything else Project Neutral makes.',
+};
+
+/* ---------- the logo ---------- */
+
+// A ring with a lit square in its gap, around a rounded N. `hud` adds the dotted outer ring for big sizes.
+function mark({ size = 64, cls = 'mark', color = 'currentColor', badge = false, ring = 3, n = 5, light = 6, hud = false } = {}) {
+  const l = (light - 6) / 2;
+  return `<svg xmlns="http://www.w3.org/2000/svg" class="${cls}" width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true">`
+    + (badge ? '<rect width="64" height="64" rx="16" fill="#111816"/>' : '')
+    + (hud ? `<g class="hud"><circle cx="32" cy="32" r="29.5" fill="none" stroke="${color}" stroke-opacity=".35" stroke-width=".5" stroke-dasharray=".6 2.4"/><path d="M32 1.5v3M62.5 32h-3M32 62.5v-3M1.5 32h3" stroke="${color}" stroke-opacity=".55" stroke-width=".7"/></g>` : '')
+    + `<g class="ring"><circle cx="32" cy="32" r="22" fill="none" stroke="${color}" stroke-width="${ring}" stroke-linecap="round" stroke-dasharray="118.2 20" transform="rotate(-19 32 32)"/>`
+    + `<rect class="light" x="${44.56 - l}" y="${13.44 - l}" width="${light}" height="${light}" rx="${light / 4}" fill="${color}"/></g>`
+    + `<path d="M23 43V21l18 22V21" fill="none" stroke="${color}" stroke-width="${n}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+const ICON = 'data:image/svg+xml,' + encodeURIComponent(mark({ cls: '', color: '#bfffa8', badge: true, ring: 4.5, n: 6.5, light: 7.5 }));
 const svg = (size, d) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>`;
 const DL = 'M12 3v12M6.5 9.5 12 15l5.5-5.5M4 20.5h16';
 const OUTLINK = 'M7 17 17 7M8.5 7H17v8.5';
+const SEARCH = 'M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13ZM15.5 15.5 21 21';
+const PLAY = '<svg width="10" height="10" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3v18l16-9z" fill="currentColor"/></svg>';
 
 /* ---------- reading the content files ---------- */
 
@@ -38,6 +61,7 @@ const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g,
 const slugify = s => String(s).toLowerCase().replace(/æ/g, 'ae').replace(/ø/g, 'o').normalize('NFKD').replace(/[̀-ͯ]/g, '')
   .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'item';
 const list = s => String(s || '').split(',').map(x => x.trim()).filter(Boolean);
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const fmtDate = d => { const m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(d || ''); return m ? `${+m[3]} ${MONTHS[+m[2] - 1]} ${m[1]}` : ''; };
 
@@ -66,6 +90,7 @@ function readDir(dir) {
 const S = fields(fs.readFileSync(path.join(CONTENT, 'settings.yml'), 'utf8').replace(/\r\n?/g, '\n'));
 S.name = S.name || 'Project Neutral';
 S.url = (S.url || 'https://v13games.github.io/mods/').replace(/\/?$/, '/');
+S.games_site = S.games_site ? S.games_site.replace(/\/?$/, '/') : '';
 S.inviteUrl = '';
 S.inviteCode = '';
 if (S.discord) {
@@ -82,23 +107,27 @@ function href(u, root) {
   return root + u.replace(/^(\.\/|\/)+/, '');
 }
 const absolute = u => (/^https?:/i.test(u) ? u : S.url + String(u).replace(/^(\.\/|\/)+/, ''));
+const DEFAULT_IMAGE = fs.existsSync(path.join(CONTENT, 'images/brand/banner.png')) ? 'images/brand/banner.png' : '';
 
-/* ---------- the mods ---------- */
+/* ---------- the mods, and the games they are for ---------- */
 
+const rawMods = readDir(path.join(CONTENT, 'mods'));
 const categories = list(S.categories || 'FiveM, Minecraft, Other');
-const RESERVED = new Set(['posts', 'images', 'site.css', 'site.js', 'index.html', '404.html']);
+for (const { meta } of rawMods) { // a mod for a game that isn't listed yet adds it, before Other
+  const g = meta.game || 'Other';
+  if (categories.some(c => c.toLowerCase() === g.toLowerCase())) continue;
+  if (categories.includes('Other')) categories.splice(categories.indexOf('Other'), 0, g); else categories.push(g);
+}
+const catSlug = c => slugify(c);
+const RESERVED = new Set(['posts', 'images', 'games', 'site.css', 'site.js', 'search-index.js', 'index.html', '404.html', ...categories.map(catSlug)]);
 const used = new Set();
-let mods = readDir(path.join(CONTENT, 'mods')).map(({ file, example, meta, body }) => {
+const mods = rawMods.map(({ file, example, meta, body }) => {
   const base = file.replace(/\.md$/i, '').replace(/^_+/, '');
   let slug = slugify(meta.slug || base);
   if (RESERVED.has(slug)) slug += '-mod';
   while (used.has(slug)) slug += '-2';
   used.add(slug);
-  let game = meta.game || 'Other';
-  const known = categories.find(c => c.toLowerCase() === game.toLowerCase());
-  if (known) game = known;
-  else if (categories.includes('Other')) categories.splice(categories.indexOf('Other'), 0, game); // a new game gets its own button, before Other
-  else categories.push(game);
+  const game = categories.find(c => c.toLowerCase() === (meta.game || 'Other').toLowerCase());
   return {
     slug, example, body, game,
     title: meta.title || base,
@@ -111,13 +140,15 @@ let mods = readDir(path.join(CONTENT, 'mods')).map(({ file, example, meta, body 
     link: meta.link || '',
     cover: list(meta.cover),
     alt: meta.cover_text || '',
-    color: meta.color || GAME_COLORS[game.toLowerCase()] || '#bfffa8',
+    color: meta.color || catColor(game),
     tags: list(meta.tags),
     requires: meta.requires || meta['works with'] || '',
     price: meta.price || '',
     hasPage: !!body.trim(),
   };
 });
+function catColor(c) { const s = catSlug(c); return S[`${s}_color`] || GAME_COLORS[s] || '#bfffa8'; }
+
 // Newest first, the "Other" links last. Releases are numbered from the oldest: M01, M02...
 const isOther = m => m.game === 'Other';
 mods.sort((a, b) => (isOther(a) - isOther(b)) || (b.released || '').localeCompare(a.released || '') || a.title.localeCompare(b.title));
@@ -125,6 +156,14 @@ const releases = mods.filter(m => !isOther(m));
 releases.forEach((m, i) => { m.no = 'M' + String(releases.length - i).padStart(2, '0'); });
 mods.filter(isOther).forEach(m => { m.no = ''; });
 const newest = releases[0];
+
+const cats = categories.map(c => ({
+  name: c, slug: catSlug(c), color: catColor(c), other: c === 'Other',
+  text: S[`${catSlug(c)}_text`] || GAME_TEXT[catSlug(c)] || `Everything Project Neutral makes for ${c}.`,
+  mods: mods.filter(m => m.game === c),
+})).filter(c => !c.other || c.mods.length);
+const gameCats = cats.filter(c => !c.other);
+const otherCat = cats.find(c => c.other);
 
 /* ---------- the posts ---------- */
 
@@ -247,12 +286,26 @@ function markdown(src, root, opts = {}) {
 
 /* ---------- the pieces every page shares ---------- */
 
-function page({ root, title, description, at, image, body, style = '' }) {
+// The tabs along the top: Home, one per game, Games, Other, Posts, Discord.
+function tabs() {
+  return [
+    { id: 'home', label: 'Home', to: '' },
+    ...gameCats.map(c => ({ id: c.slug, label: c.name, to: c.slug + '/', color: c.color, count: c.mods.length })),
+    S.games_site && { id: 'games', label: 'Games', to: 'games/', color: GAME_COLORS.games, games: true },
+    otherCat && { id: 'other', label: 'Other', to: 'other/', count: otherCat.mods.length },
+    { id: 'posts', label: 'Posts', to: 'posts/', count: posts.length },
+    S.inviteUrl && { id: 'discord', label: 'Discord', url: S.inviteUrl },
+  ].filter(Boolean);
+}
+const tabHref = (t, root) => t.url || (root + t.to) || './';
+
+function page({ root, title, description, at, image, body, tab, style = '' }) {
   const full = title ? `${title} · ${S.name}` : S.name;
   const desc = description || S.description || '';
-  const img = image ? absolute(image) : '';
+  const img = absolute(image || DEFAULT_IMAGE || '');
+  const attrs = [`data-root="${esc(root || './')}"`, S.inviteCode && `data-invite="${esc(S.inviteCode)}"`, S.games_site && `data-games="${esc(S.games_site)}"`, style && `style="${esc(style)}"`].filter(Boolean).join(' ');
   return `<!doctype html>
-<html lang="en"${S.inviteCode ? ` data-invite="${esc(S.inviteCode)}"` : ''}${style ? ` style="${esc(style)}"` : ''}>
+<html lang="en" ${attrs}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -264,7 +317,8 @@ function page({ root, title, description, at, image, body, style = '' }) {
 <meta property="og:title" content="${esc(full)}">
 <meta property="og:description" content="${esc(desc)}">
 <meta property="og:url" content="${esc(S.url + at)}">
-${img ? `<meta property="og:image" content="${esc(img)}">\n<meta name="twitter:card" content="summary_large_image">\n` : ''}<link rel="icon" href="${ICON}">
+${(image || DEFAULT_IMAGE) ? `<meta property="og:image" content="${esc(img)}">\n<meta name="twitter:card" content="summary_large_image">\n` : ''}<link rel="icon" href="${ICON}">
+<link rel="apple-touch-icon" href="${root}images/brand/icon-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@200;400;500;700&family=Inter+Tight:wght@400;500;700&display=swap">
@@ -272,23 +326,29 @@ ${img ? `<meta property="og:image" content="${esc(img)}">\n<meta name="twitter:c
 </head>
 <body>
   <!-- This page is made by build.js from the files in the content folder. Change those, not this. -->
+${header(root, tab)}
 ${body}
 ${footer(root)}
+  <script src="${root}search-index.js" defer></script>
   <script src="${root}site.js" defer></script>
 </body>
 </html>
 `;
 }
 
-function nav(root) {
+function header(root, active) {
   return `  <header class="wrap nav">
-    <a class="brand" href="${root || './'}"><img src="${ICON}" width="24" height="24" alt=""><span>${esc(S.name)}</span></a>
-    <nav class="nav-links" aria-label="Main">
-      <a class="link" href="${root}#mods">All mods</a>
-      <a class="link" href="${root}posts/">Posts</a>
-      ${S.inviteUrl ? `<a class="go" href="${esc(S.inviteUrl)}"><span class="wide-only">Join </span>Discord</a>` : `<a class="go" href="${root}#mods">Newest</a>`}
-    </nav>
-  </header>`;
+    <a class="brand" href="${root || './'}">${mark({ size: 30 })}<span>${esc(S.name)}</span></a>
+    <div class="nav-links">
+      <button type="button" class="search-btn" data-search aria-label="Search everything (press /)">${svg(14, SEARCH)}<span class="wide-only">Search</span><kbd>/</kbd></button>
+      ${S.inviteUrl ? `<a class="go" href="${esc(S.inviteUrl)}"><span class="wide-only">Join </span>Discord</a>` : ''}
+    </div>
+  </header>
+  <nav class="tabs-bar" aria-label="Sections">
+    <div class="wrap tabs">
+${tabs().map(t => `      <a class="tab${t.url ? ' ext' : ''}" href="${esc(tabHref(t, root))}"${t.id === active ? ' aria-current="page"' : ''}>${t.color ? `<i style="--c:${esc(t.color)}"></i>` : ''}${esc(t.label)}${t.count != null ? ` <span>${t.count}</span>` : ''}${t.games ? ' <span data-games-count hidden></span>' : ''}</a>`).join('\n')}
+    </div>
+  </nav>`;
 }
 
 function footer(root) {
@@ -297,10 +357,8 @@ function footer(root) {
       <div class="foot-top">
         <p>© ${YEAR} ${esc(S.name)}</p>
         <nav class="foot-links" aria-label="More">
-          <a href="${root}#mods">All mods</a>
-          <a href="${root}posts/">Posts</a>
-          ${S.inviteUrl ? `<a href="${esc(S.inviteUrl)}">Discord</a>` : ''}
-          ${S.games_site ? `<a href="${esc(S.games_site)}">Games</a>` : ''}
+${tabs().map(t => `          <a href="${esc(tabHref(t, root))}">${esc(t.label)}</a>`).join('\n')}
+          ${S.games_site ? `<a href="${esc(S.games_site)}">Games site ↗</a>` : ''}
           <a href="#">Back to top</a>
         </nav>
       </div>
@@ -328,10 +386,9 @@ function fitSize(text) {
 function genCover(text, left, right) {
   return `<div class="frame gen gen-bg" aria-hidden="true"><i>${esc(left)}</i>${right ? `<i>${esc(right)}</i>` : ''}<b style="font-size:${fitSize(text)}cqi">${esc(text)}</b></div>`;
 }
-function frame(m, root, eager) {
-  const lazy = eager ? '' : ' loading="lazy"';
-  if (m.cover.length > 1) return `<div class="frame collage">${m.cover.slice(0, 4).map(c => `<img src="${esc(href(c, root))}" alt=""${lazy}>`).join('')}</div>`;
-  if (m.cover.length) return `<div class="frame"><img src="${esc(href(m.cover[0], root))}" width="1600" height="900" alt="${esc(m.alt || m.title)}"${lazy}></div>`;
+function frame(m, root) {
+  if (m.cover.length > 1) return `<div class="frame collage">${m.cover.slice(0, 4).map(c => `<img src="${esc(href(c, root))}" alt="" loading="lazy">`).join('')}</div>`;
+  if (m.cover.length) return `<div class="frame"><img src="${esc(href(m.cover[0], root))}" width="1600" height="900" alt="${esc(m.alt || m.title)}" loading="lazy"></div>`;
   return genCover(m.title, m.game, m.no || m.type);
 }
 
@@ -359,18 +416,31 @@ function card(m, root) {
 }
 
 // An empty slot for a game with nothing on the site yet, so it is clear more is coming.
-function soonCard(game) {
-  const color = GAME_COLORS[game.toLowerCase()] || '#bfffa8';
-  const to = S.inviteUrl || '#posts';
-  return `        <article class="card soon" data-genre="${esc(game)}" data-tags="" style="--game:${esc(color)}">
-          ${genCover(game, game, 'Soon')}
+function soonCard(c, root) {
+  return `        <article class="card soon" data-genre="${esc(c.name)}" data-tags="" style="--game:${esc(c.color)}">
+          ${genCover(c.name, c.name, 'Soon')}
           <div class="meta">
-            <span class="no">Soon / ${esc(game)}</span>
-            <h3><a class="card-link" href="${esc(to)}">${esc(game)} releases</a></h3>
-            ${S.inviteUrl ? `<a class="play" href="${esc(S.inviteUrl)}" aria-label="Join the Discord">${svg(10, OUTLINK)}Discord</a>` : ''}
+            <span class="no">Soon / ${esc(c.name)}</span>
+            <h3><a class="card-link" href="${root}${c.slug}/">${esc(c.name)} releases</a></h3>
             <p class="sum">On their way. ${S.inviteUrl ? 'Join the Discord to hear first.' : 'Keep an eye on the posts.'}</p>
           </div>
         </article>`;
+}
+
+function soonBox(c, root) {
+  return `      <div class="soon-box">
+        ${mark({ size: 72 })}
+        <p class="big-lede">The first ${esc(c.name)} release is on its way.</p>
+        <p class="note">${S.inviteUrl ? 'The Discord hears about it first, so that is the place to be.' : 'It will show up right here, and in the posts.'}</p>
+        <div class="play-row">
+          ${S.inviteUrl ? `<a class="btn" href="${esc(S.inviteUrl)}">${svg(14, OUTLINK)}Join the Discord</a>` : ''}
+          ${S.games_site ? `<a class="btn ghost" href="${root}games/">Play games meanwhile</a>` : ''}
+        </div>
+      </div>`;
+}
+
+function skeletons(n) {
+  return Array.from({ length: n }, () => `        <div class="card skel" aria-hidden="true"><div class="frame"></div><div class="meta"><span class="no">Loading</span><h3>&nbsp;</h3></div></div>`).join('\n');
 }
 
 function feed(items, root) {
@@ -394,57 +464,139 @@ function joinBox() {
     </section>`;
 }
 
+function pageHero({ name, color, label, text, buttons = '' }) {
+  return `    <section class="wrap">
+      <div class="page-hero gen-bg" style="--game:${esc(color)}">
+        <p class="label"><i class="sq" aria-hidden="true"></i>${esc(name)} <span class="dim">/ ${esc(label)}</span></p>
+        <h1 class="giant"><span data-fit style="--len:${Math.max(name.length, 4)}">${esc(name)}</span></h1>
+        <p class="page-sub">${esc(text)}</p>
+        ${buttons ? `<div class="play-row">${buttons}</div>` : ''}
+      </div>
+    </section>`;
+}
+
 /* ---------- the pages ---------- */
 
 function home() {
   const root = '';
-  const counts = {};
-  mods.forEach(m => { counts[m.game] = (counts[m.game] || 0) + 1; });
-  const shownCats = categories.filter(c => counts[c] || c !== 'Other');
-  const missing = shownCats.filter(c => c !== 'Other' && !counts[c]);
-  const cards = [...mods.filter(m => !isOther(m)).map(m => card(m, root)), ...missing.map(soonCard), ...mods.filter(isOther).map(m => card(m, root))];
-  const n = releases.length;
-  const head = n ? `${n} ${n === 1 ? 'release' : 'releases'}` : 'First releases soon';
-  const gamesList = categories.filter(c => c !== 'Other');
-  const madeFor = gamesList.length ? `${gamesList.slice(0, 3).join(', ')} and more` : 'and more';
-  const chip = (g, label, count, on) => `          <button type="button" class="chip" data-genre="${esc(g)}" aria-pressed="${on}">${esc(label)} <span>${count}</span></button>`;
-  const body = `${nav(root)}
+  const madeFor = gameCats.length ? `${gameCats.map(c => c.name).slice(0, 3).join(', ')} and more` : 'and more';
+  const tiles = [
+    ...gameCats.map(c => ({ to: c.slug + '/', name: c.name, color: c.color, n: c.mods.length, sub: c.mods.length ? plural(c.mods.length, 'release', 'releases') : 'Coming soon' })),
+    S.games_site && { to: 'games/', name: 'Games', color: GAME_COLORS.games, n: '', games: true, sub: 'Free in your browser' },
+    { to: 'posts/', name: 'Posts', color: GAME_COLORS.posts, n: posts.length, sub: posts[0] ? `Latest: ${fmtDate(posts[0].date)}` : 'News and updates' },
+    S.inviteUrl && { url: S.inviteUrl, name: 'Discord', color: '#8c9eff', n: '', online: true, sub: 'Chat, help and drops' },
+  ].filter(Boolean);
+  const tile = t => `        <a class="tile" href="${esc(t.url || t.to)}" style="--c:${esc(t.color)}">
+          <span class="tile-top"><i aria-hidden="true"></i>${esc(t.name)}</span>
+          <b${t.games ? ' data-games-count' : ''}>${t.online ? '<span data-n="online">&nbsp;</span>' : t.n === '' ? '&nbsp;' : t.n}</b>
+          <span class="tile-sub">${t.online ? '<span data-online hidden>online now · </span>' : ''}${esc(t.sub)}</span>
+          <span class="tile-go" aria-hidden="true">${t.url ? '↗' : '→'}</span>
+        </a>`;
+  const missing = gameCats.filter(c => !c.mods.length);
+  const stats = [
+    ...gameCats.map(c => `<li><a href="${c.slug}/" style="--c:${esc(c.color)}"><i></i>${esc(c.name)} <b>${c.mods.length}</b></a></li>`),
+    S.games_site ? `<li><a href="games/" style="--c:${GAME_COLORS.games}"><i></i>Games <b data-games-count>…</b></a></li>` : '',
+    S.inviteUrl ? `<li data-online hidden><a href="${esc(S.inviteUrl)}"><i></i>Online on Discord <b data-n="online">0</b></a></li>` : '',
+  ].filter(Boolean).join('');
 
-  <main>
-    <section class="top">
-      <h1 class="giant"><span class="sr-only">${esc(S.name)}: mods and plugins for ${esc(madeFor)}</span><span data-fit aria-hidden="true" style="--len:4">Mods</span></h1>
+  const body = `  <main>
+    <section class="wrap" aria-label="Welcome">
+      <div class="hero">
+        <canvas class="rain" aria-hidden="true"></canvas>
+        <div>
+          <p class="label hero-kicker"><i class="dot" aria-hidden="true"></i>${esc(S.name)}<span class="dim"> / ${esc(S.kicker || 'Discord community')}</span></p>
+          <h1 class="hero-title">${esc(S.headline || 'Mods, plugins')}<br><em>${esc(S.headline_2 || '& games')}</em></h1>
+          <p class="hero-sub">${esc(S.tagline || `Made by ${S.name} for ${madeFor}. Look around, grab what you like, and say hi on the Discord.`)}</p>
+          <div class="play-row">
+            <a class="btn big" href="#releases">Browse releases</a>
+            ${S.games_site ? `<a class="btn ghost big" href="games/">${PLAY}Play games</a>` : ''}
+            ${S.inviteUrl ? `<a class="btn ghost big" href="${esc(S.inviteUrl)}">${svg(14, OUTLINK)}Join Discord</a>` : ''}
+          </div>
+        </div>
+        ${mark({ size: 340, cls: 'mark hero-mark', hud: true })}
+        <ul class="hero-stats">${stats}</ul>
+      </div>
     </section>
 
-    <section class="wrap section" id="mods" aria-label="All mods">
+    <section class="wrap section" aria-labelledby="look-title">
       <div class="title-row">
-        <p class="label">${esc(head)} <span class="dim">/ ${esc(madeFor)}</span><span data-online hidden><span class="dim"> / </span><i class="dot" aria-hidden="true"></i><b data-n="online">0</b> online on Discord</span></p>
-        <div class="chips" role="group" aria-label="Show by game">
+        <h2 id="look-title"><span>//</span>Look around</h2>
+        <p class="label dim">Tip: press <kbd>/</kbd> to search everything</p>
+      </div>
+      <div class="tiles">
+${tiles.map(tile).join('\n')}
+      </div>
+    </section>
+
+    <section class="wrap section" id="releases" aria-labelledby="releases-title">
+      <div class="title-row">
+        <h2 id="releases-title"><span>//</span>Latest releases</h2>
+        <div class="chips" role="group" aria-label="Filter">
           <button type="button" class="chip tag-chip" id="tag-chip" hidden>#<b></b> <i aria-hidden="true">×</i></button>
-${chip('all', 'All', mods.length, true)}
-${shownCats.map(c => chip(c, c, counts[c] || 0, false)).join('\n')}
         </div>
       </div>
       <div class="grid" data-filter-grid>
-${cards.join('\n')}
+${[...releases.map(m => card(m, root)), ...missing.map(c => soonCard(c, root))].join('\n')}
       </div>
       <div class="empty" id="empty" hidden>
-        <p class="label">Nothing matches that yet.</p>
+        <p class="label">Nothing has that tag yet.</p>
         <button type="button" class="btn ghost" id="show-all">Show everything</button>
       </div>
     </section>
 
+${S.games_site ? `    <section class="wrap section" aria-labelledby="games-title">
+      <div class="title-row">
+        <h2 id="games-title"><span>//</span>Games</h2>
+        <a class="see-all label" href="games/">All games &rarr;</a>
+      </div>
+      <div class="strip" data-games-list="8">
+${skeletons(4)}
+      </div>
+      <p class="games-fail" hidden>The games couldn't load right now. <a href="${esc(S.games_site)}">Open the games site</a></p>
+    </section>
+` : ''}
     <section class="wrap section" id="posts" aria-labelledby="posts-title">
       <div class="title-row">
         <h2 id="posts-title"><span>//</span>Latest posts</h2>
-        ${posts.length > 5 ? `<a class="see-all label" href="posts/">All ${posts.length} posts &rarr;</a>` : ''}
+        <a class="see-all label" href="posts/">All posts &rarr;</a>
       </div>
-${feed(posts.slice(0, 5), root)}
+${feed(posts.slice(0, 4), root)}
     </section>
 
 ${joinBox()}
   </main>
 `;
-  return page({ root, at: '', body, image: (newest && newest.cover[0]) || '', description: S.description });
+  return page({ root, at: '', tab: 'home', body, description: S.description });
+}
+
+function categoryPage(c) {
+  const root = '../';
+  const n = c.mods.length;
+  const label = c.other ? plural(n, 'link', 'links') : n ? plural(n, 'release', 'releases') : 'coming soon';
+  const body = `  <main>
+${pageHero({ name: c.name, color: c.color, label, text: c.text })}
+    <section class="wrap section" aria-label="${esc(c.name)}">
+${n ? `      <div class="grid">\n${c.mods.map(m => card(m, root)).join('\n')}\n      </div>` : soonBox(c, root)}
+    </section>
+${joinBox()}
+  </main>
+`;
+  return page({ root, at: c.slug + '/', tab: c.other ? 'other' : c.slug, title: c.name, description: `${c.text} ${n ? label : 'Coming soon'} from ${S.name}.`, body });
+}
+
+function gamesPage() {
+  const root = '../';
+  const body = `  <main>
+${pageHero({ name: 'Games', color: GAME_COLORS.games, label: 'free in your browser', text: S.games_text || 'Free games you play in your browser. Nothing to install. Tap one to play.', buttons: `<a class="btn" href="${esc(S.games_site)}">${svg(14, OUTLINK)}Open the games site</a>` })}
+    <section class="wrap section" aria-label="All games">
+      <div class="grid" data-games-list="all">
+${skeletons(6)}
+      </div>
+      <p class="games-fail" hidden>The games couldn't load right now. <a href="${esc(S.games_site)}">Open the games site</a></p>
+    </section>
+  </main>
+`;
+  return page({ root, at: 'games/', tab: 'games', title: 'Games', description: 'Free games from Project Neutral, played right in your browser.', body });
 }
 
 function modPage(m) {
@@ -455,8 +607,10 @@ function modPage(m) {
   const at = withPages.indexOf(m);
   const prev = withPages[at + 1], next = withPages[at - 1];
   const more = mods.filter(x => x !== m && !isOther(x)).sort((x, y) => (y.game === m.game) - (x.game === m.game)).slice(0, 3);
+  const c = cats.find(x => x.name === m.game);
+  const catHref = `../${c.other ? 'other' : c.slug}/`;
   const spec = [
-    ['Game', `<a href="../?genre=${encodeURIComponent(m.game)}#mods">${esc(m.game)}</a>`],
+    ['Game', `<a href="${catHref}">${esc(m.game)}</a>`],
     m.type && ['Type', esc(m.type)],
     m.version && ['Version', esc(m.version)],
     m.released && ['Released', esc(fmtDate(m.released) || m.released)],
@@ -466,20 +620,21 @@ function modPage(m) {
   ].filter(Boolean);
   const facts = [m.version && `Version ${m.version}`, m.updated && `updated ${fmtDate(m.updated) || m.updated}`].filter(Boolean).join(', ');
   const body = `  <main>
-    <section class="ghero${m.cover.length ? '' : ' gen-bg'}">
-      ${m.cover.length ? `<img class="ghero-img" src="${esc(href(m.cover[0], root))}" width="1600" height="900" alt="${esc(m.alt || m.title)}" fetchpriority="high">` : ''}
-${nav(root)}
-      <nav class="wrap crumbs label" aria-label="You are here">
-        <ol><li><a href="../">Mods</a></li><li><a href="../?genre=${encodeURIComponent(m.game)}#mods">${esc(m.game)}</a></li><li aria-current="page">${esc(m.title)}</li></ol>
-      </nav>
-      <div class="wrap ghero-in">
-        <div class="play-row">
-          ${a ? `<a class="btn big" href="${esc(a.href)}">${svg(14, a.icon)}${esc(a.long)}</a>` : ''}
-          ${hasInstall ? `<a class="btn ghost big" href="#install">How to install</a>` : ''}
+    <div class="wrap">
+      <section class="ghero${m.cover.length ? '' : ' gen-bg'}">
+        ${m.cover.length ? `<img class="ghero-img" src="${esc(href(m.cover[0], root))}" width="1600" height="900" alt="${esc(m.alt || m.title)}" fetchpriority="high">` : ''}
+        <nav class="wrap crumbs label" aria-label="You are here">
+          <ol><li><a href="../">Home</a></li><li><a href="${catHref}">${esc(m.game)}</a></li><li aria-current="page">${esc(m.title)}</li></ol>
+        </nav>
+        <div class="wrap ghero-in">
+          <div class="play-row">
+            ${a ? `<a class="btn big" href="${esc(a.href)}">${svg(14, a.icon)}${esc(a.long)}</a>` : ''}
+            ${hasInstall ? `<a class="btn ghost big" href="#install">How to install</a>` : ''}
+          </div>
         </div>
-      </div>
-      <h1 class="giant"><span data-fit style="--len:${Math.max(m.title.length, 4)}">${esc(m.title)}</span></h1>
-    </section>
+        <h1 class="giant"><span data-fit style="--len:${Math.max(m.title.length, 4)}">${esc(m.title)}</span></h1>
+      </section>
+    </div>
 
     <section class="wrap gintro" aria-label="About ${esc(m.title)}">
       <div class="spec">
@@ -491,7 +646,7 @@ ${nav(root)}
       <div>
         ${m === newest ? '<span class="new">Newest release</span>' : ''}
         ${m.summary ? `<p class="big-lede">${esc(m.summary)}</p>` : ''}
-        ${m.tags.length ? `<ul class="tags" aria-label="Tags">${m.tags.map(t => `<li><a href="../?tag=${encodeURIComponent(t)}#mods">${esc(t)}</a></li>`).join('')}</ul>` : ''}
+        ${m.tags.length ? `<ul class="tags" aria-label="Tags">${m.tags.map(t => `<li><a href="../?tag=${encodeURIComponent(t)}#releases">${esc(t)}</a></li>`).join('')}</ul>` : ''}
       </div>
     </section>
 
@@ -519,8 +674,8 @@ ${markdown(m.body, root, { sections: true, firstHeading: `About ${m.title}` })}
         ${next ? `<a class="pg next" href="../${next.slug}/" rel="next"><span class="label">${next.no ? esc(next.no) + ' / ' : ''}Next &rsaquo;</span><b>${esc(next.title)}</b></a>` : ''}
       </nav>` : ''}
       ${more.length ? `<div class="title-row">
-        <h2 id="more-title"><span>//</span>More mods</h2>
-        <a class="see-all label" href="../#mods">See all &rarr;</a>
+        <h2 id="more-title"><span>//</span>More releases</h2>
+        <a class="see-all label" href="../#releases">See all &rarr;</a>
       </div>
       <div class="grid">
 ${more.map(x => card(x, root)).join('\n')}
@@ -528,16 +683,15 @@ ${more.map(x => card(x, root)).join('\n')}
     </section>
   </main>
 `;
-  return page({ root, at: m.slug + '/', title: m.title, description: m.summary || excerpt(m.body), image: m.cover[0] || '', body, style: `--game:${m.color}` });
+  return page({ root, at: m.slug + '/', tab: c.other ? 'other' : c.slug, title: m.title, description: m.summary || excerpt(m.body), image: m.cover[0] || '', body, style: `--game:${m.color}` });
 }
 
 function postPage(p, i) {
   const root = '../../';
   const prev = posts[i + 1], next = posts[i - 1];
-  const body = `${nav(root)}
-  <main>
-    <nav class="wrap crumbs label" aria-label="You are here">
-      <ol><li><a href="../../">Mods</a></li><li><a href="../">Posts</a></li><li aria-current="page">${esc(p.title)}</li></ol>
+  const body = `  <main>
+    <nav class="wrap crumbs label" aria-label="You are here" style="padding-top:clamp(18px,2.4vw,28px)">
+      <ol><li><a href="../../">Home</a></li><li><a href="../">Posts</a></li><li aria-current="page">${esc(p.title)}</li></ol>
     </nav>
     <article class="wrap post">
       <header class="post-head">
@@ -555,23 +709,35 @@ ${markdown(p.body, root)}
     </div></nav>` : ''}
   </main>
 `;
-  return page({ root, at: `posts/${p.slug}/`, title: p.title, description: p.summary, image: p.image, body });
+  return page({ root, at: `posts/${p.slug}/`, tab: 'posts', title: p.title, description: p.summary, image: p.image, body });
 }
 
 function postsPage() {
   const root = '../';
-  const body = `${nav(root)}
-  <main>
-    <section class="top">
-      <h1 class="giant"><span class="sr-only">Posts from ${esc(S.name)}</span><span data-fit aria-hidden="true" style="--len:5">Posts</span></h1>
-    </section>
-    <section class="wrap section" aria-labelledby="all-posts">
-      <div class="title-row"><h2 id="all-posts"><span>//</span>${posts.length} ${posts.length === 1 ? 'post' : 'posts'}</h2></div>
+  const body = `  <main>
+${pageHero({ name: 'Posts', color: GAME_COLORS.posts, label: plural(posts.length, 'post', 'posts'), text: `News, updates and behind-the-scenes from ${S.name}.` })}
+    <section class="wrap section" aria-label="All posts">
 ${feed(posts, root)}
     </section>
   </main>
 `;
-  return page({ root, at: 'posts/', title: 'Posts', description: `News and updates from ${S.name}.`, body });
+  return page({ root, at: 'posts/', tab: 'posts', title: 'Posts', description: `News and updates from ${S.name}.`, body });
+}
+
+// Everything the search box can find (games are added in the browser, read live from the games site).
+function searchIndex() {
+  const items = [
+    { t: 'Home', k: 'Page', u: '', d: 'The front page' },
+    ...gameCats.map(c => ({ t: c.name, k: 'Tab', u: c.slug + '/', d: c.text, c: c.color })),
+    S.games_site && { t: 'Games', k: 'Tab', u: 'games/', d: 'Every game, free in your browser', c: GAME_COLORS.games },
+    otherCat && { t: 'Other', k: 'Tab', u: 'other/', d: otherCat.text },
+    { t: 'Posts', k: 'Tab', u: 'posts/', d: 'News and updates' },
+    S.inviteUrl && { t: 'Discord', k: 'Link', u: S.inviteUrl, d: 'Join the Discord server', c: '#8c9eff' },
+    S.games_site && { t: 'Games site', k: 'Link', u: S.games_site, d: S.games_site.replace(/^https?:\/\//, '') },
+    ...mods.map(m => ({ t: m.title, k: m.game, u: m.hasPage ? m.slug + '/' : (m.link || m.download || ''), d: [m.type, m.summary].filter(Boolean).join(' · '), c: m.color, x: m.tags.join(' ') })),
+    ...posts.map(p => ({ t: p.title, k: 'Post', u: `posts/${p.slug}/`, d: `${fmtDate(p.date)} · ${p.summary}` })),
+  ].filter(x => x && x.u !== undefined);
+  return `// Made by build.js: everything the search box (press /) can find.\nwindow.NEUTRAL_INDEX = ${JSON.stringify(items)};\n`;
 }
 
 /* ---------- build ---------- */
@@ -584,12 +750,15 @@ function write(rel, text) {
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
 write('index.html', home());
+cats.forEach(c => write(`${c.other ? 'other' : c.slug}/index.html`, categoryPage(c)));
+if (S.games_site) write('games/index.html', gamesPage());
 mods.filter(m => m.hasPage).forEach(m => write(`${m.slug}/index.html`, modPage(m)));
 write('posts/index.html', postsPage());
 posts.forEach((p, i) => write(`posts/${p.slug}/index.html`, postPage(p, i)));
+write('search-index.js', searchIndex());
 for (const f of ['site.css', 'site.js']) fs.copyFileSync(path.join(ROOT, f), path.join(OUT, f));
 if (fs.existsSync(path.join(CONTENT, 'images'))) fs.cpSync(path.join(CONTENT, 'images'), path.join(OUT, 'images'), { recursive: true });
-console.log(`Built ${releases.length} release(s), ${mods.length - releases.length} other link(s) and ${posts.length} post(s) into _site${EXAMPLES ? ' (examples included)' : ''}.`);
+console.log(`Built ${releases.length} release(s), ${mods.length - releases.length} other link(s), ${posts.length} post(s) and ${cats.length + (S.games_site ? 1 : 0)} tab(s) into _site${EXAMPLES ? ' (examples included)' : ''}.`);
 if (!S.inviteUrl) console.log('Tip: put your Discord invite in content/settings.yml (discord: ...) to show the Join buttons.');
 
 /* ---------- a small local server for --serve ---------- */

@@ -1,0 +1,84 @@
+<!doctype html>
+<!-- The Project Neutral banner, 1600x900. Used for link previews (when the site is shared on Discord) and fits a
+     Discord server banner. Make the PNG again with brand/make-images.ps1 after changing it. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Project Neutral banner</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;700&family=Inter+Tight:wght@700&display=swap">
+<style>
+:root{--bg:#111816;--lime:#bfffa8;--white:#fffffa;--dim:#6f9565;--muted:#a3cf96}
+*{box-sizing:border-box}
+html,body{margin:0;width:1600px;height:900px;overflow:hidden;background:var(--bg)}
+.b{position:relative;width:1600px;height:900px;overflow:hidden;isolation:isolate;
+  background:radial-gradient(55% 75% at 30% 46%,rgba(191,255,168,.16),transparent 62%),radial-gradient(50% 70% at 100% 100%,rgba(98,196,106,.14),transparent 60%),linear-gradient(180deg,#14211b,#0d1411)}
+canvas{position:absolute;inset:0;z-index:-2;opacity:.75;-webkit-mask-image:radial-gradient(70% 90% at 30% 46%,rgba(0,0,0,.25),#000 70%);mask-image:radial-gradient(70% 90% at 30% 46%,rgba(0,0,0,.25),#000 70%)}
+.b::before{content:"";position:absolute;inset:0;z-index:-1;background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px)}
+.frame{position:absolute;inset:36px;border:1px solid rgba(191,255,168,.28);border-radius:34px}
+.corner{position:absolute;width:30px;height:30px;border-color:var(--lime);border-style:solid;border-width:0}
+.c1{top:54px;left:54px;border-top-width:2px;border-left-width:2px;border-top-left-radius:10px}
+.c2{top:54px;right:54px;border-top-width:2px;border-right-width:2px;border-top-right-radius:10px}
+.c3{bottom:54px;left:54px;border-bottom-width:2px;border-left-width:2px;border-bottom-left-radius:10px}
+.c4{bottom:54px;right:54px;border-bottom-width:2px;border-right-width:2px;border-bottom-right-radius:10px}
+.top{position:absolute;top:84px;left:108px;right:108px;display:flex;justify-content:space-between;font:400 20px/1 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.top i{display:inline-block;width:11px;height:11px;margin-right:14px;border-radius:3px;background:var(--lime);box-shadow:0 0 16px var(--lime);vertical-align:1px}
+.mid{position:absolute;left:108px;top:236px;display:flex;align-items:center;gap:56px}
+.mark{width:300px;height:300px;color:var(--lime);filter:drop-shadow(0 0 34px rgba(191,255,168,.5))}
+.name{font:700 92px/1 'Inter Tight',Helvetica,Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--white);text-shadow:0 0 40px rgba(191,255,168,.3)}
+.name span{display:block;margin-top:6px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:transparent;-webkit-text-stroke:2px var(--lime)}
+.what{margin-top:30px;font:500 28px/1 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--lime)}
+.what b{color:var(--dim);font-weight:400;margin:0 14px}
+.bottom{position:absolute;left:108px;right:108px;bottom:84px;display:flex;justify-content:space-between;align-items:center;font:400 20px/1 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.chips{display:flex;gap:12px}
+.chips span{padding:12px 18px;border:1px solid rgba(191,255,168,.42);border-radius:999px;color:var(--lime);background:rgba(17,24,22,.6)}
+.chips i{display:inline-block;width:10px;height:10px;margin-right:12px;border-radius:3px;vertical-align:0}
+</style>
+</head>
+<body>
+<div class="b">
+  <canvas id="rain" width="1600" height="900"></canvas>
+  <div class="frame"></div>
+  <i class="corner c1"></i><i class="corner c2"></i><i class="corner c3"></i><i class="corner c4"></i>
+  <div class="top"><span><i></i>Discord community</span><span>Est. 2026</span></div>
+  <div class="mid">
+    <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+      <g><circle cx="32" cy="32" r="29.5" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-width=".5" stroke-dasharray=".6 2.4"/><path d="M32 1.5v3M62.5 32h-3M32 62.5v-3M1.5 32h3" stroke="currentColor" stroke-opacity=".55" stroke-width=".7"/></g>
+      <circle cx="32" cy="32" r="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="118.2 20" transform="rotate(-19 32 32)"/>
+      <rect x="44.56" y="13.44" width="6" height="6" rx="1.5" fill="currentColor"/>
+      <path d="M23 43V21l18 22V21" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <div class="name">Project<span>Neutral</span></div>
+      <div class="what">Mods<b>/</b>Plugins<b>/</b>Games</div>
+    </div>
+  </div>
+  <div class="bottom">
+    <div class="chips"><span><i style="background:#ff7a3d"></i>FiveM</span><span><i style="background:#62c46a"></i>Minecraft</span><span><i style="background:#5ab8ff"></i>Games</span></div>
+    <span>v13games.github.io/mods</span>
+  </div>
+</div>
+<script>
+// A still frame of green code rain (the same idea as the moving one on the site).
+(function () {
+  var c = document.getElementById('rain'), ctx = c.getContext('2d'), size = 22;
+  var glyphs = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ0123456789NEUTRAL<>/+=*';
+  var seed = 7; function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+  ctx.font = '500 ' + (size - 4) + 'px "Geist Mono", ui-monospace, monospace';
+  // no rain over the words: [left, top, right, bottom]
+  var keepClear = [[90, 60, 420, 120], [1330, 60, 1520, 120], [440, 240, 1030, 530], [90, 750, 600, 840], [1150, 760, 1520, 830]];
+  var clear = function (x, y) { return keepClear.some(function (b) { return x > b[0] - size && x < b[2] && y > b[1] && y < b[3] + size; }); };
+  for (var x = 0; x < 1600; x += size) {
+    if (rnd() < 0.18) continue;
+    var head = rnd() * 1100, len = 6 + Math.floor(rnd() * 22);
+    for (var k = 0; k < len; k++) {
+      var y = head - k * size;
+      if (y < -size) break;
+      if (clear(x, y)) { rnd(); continue; }
+      ctx.fillStyle = k === 0 ? 'rgba(255,255,250,.85)' : 'rgba(191,255,168,' + (0.55 * (1 - k / len)).toFixed(3) + ')';
+      ctx.fillText(glyphs.charAt(Math.floor(rnd() * glyphs.length)), x + 3, y);
+    }
+  }
+})();
+</script>
+</body>
+</html>

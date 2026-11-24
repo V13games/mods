@@ -1,0 +1,25 @@
+<!doctype html>
+<!-- The Project Neutral icon, 512x512: for the Discord server icon, a Discord bot's picture, and phones' home screens.
+     Discord shows it as a circle, so everything important stays inside the middle. Make the PNG with brand/make-images.ps1. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Project Neutral icon</title>
+<style>
+html,body{margin:0;width:512px;height:512px;overflow:hidden;background:#111816}
+.i{position:relative;width:512px;height:512px;display:grid;place-items:center;background:radial-gradient(60% 60% at 50% 46%,rgba(191,255,168,.2),transparent 70%),linear-gradient(180deg,#16241d,#0d1411)}
+.i::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px)}
+svg{position:relative;width:420px;height:420px;color:#bfffa8;filter:drop-shadow(0 0 26px rgba(191,255,168,.55))}
+</style>
+</head>
+<body>
+<div class="i">
+  <svg viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="32" cy="32" r="29.5" fill="none" stroke="currentColor" stroke-opacity=".3" stroke-width=".5" stroke-dasharray=".6 2.4"/>
+    <circle cx="32" cy="32" r="22" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="118.2 20" transform="rotate(-19 32 32)"/>
+    <rect x="44.36" y="13.24" width="6.4" height="6.4" rx="1.6" fill="currentColor"/>
+    <path d="M23 43V21l18 22V21" fill="none" stroke="currentColor" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</div>
+</body>
+</html>
