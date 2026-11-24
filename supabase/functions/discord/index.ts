@@ -34,6 +34,15 @@ function serverKey(): string {
   return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 }
 
+// Describes a saved token without giving it away: its length, its dots, and which bot it is for
+// (a bot token's first part is just the bot's ID, which is public).
+function tokenShape(t: string): string {
+  const parts = t.split('.');
+  let id = '';
+  try { id = atob(parts[0].replace(/-/g, '+').replace(/_/g, '/')); } catch { /* not a bot token */ }
+  return `${t.length} characters, ${parts.length - 1} dots` + (/^\d{17,20}$/.test(id) ? `, for bot ${id}` : ', not a bot token');
+}
+
 function reply(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 }
@@ -55,8 +64,9 @@ Deno.serve(async (req) => {
     const { data: profile } = await db.from('profiles').select('role').eq('id', user.id).maybeSingle();
     if (!profile || !['owner', 'admin'].includes(profile.role)) return reply({ error: 'Only admins can use this.' }, 403);
 
-    const token = Deno.env.get('DISCORD_BOT_TOKEN');
+    const token = Deno.env.get('DISCORD_BOT_TOKEN')?.trim();
     if (!token) return reply({ error: 'The bot token is not set up yet (DISCORD_BOT_TOKEN in Supabase).' }, 503);
+    if (!/^[\w.-]+$/.test(token)) return reply({ error: "The saved bot token isn't a token. Copy it again: Discord Developer Portal > Bot > Reset Token > Copy." }, 503);
     const discord = async (path: string, init: RequestInit = {}) => {
       const res = await fetch(API + path, {
         ...init,
@@ -70,7 +80,7 @@ Deno.serve(async (req) => {
     let guildId = Deno.env.get('DISCORD_GUILD_ID') ?? '';
     if (!guildId) {
       const mine = await discord('/users/@me/guilds');
-      if (!mine.ok) return reply({ error: mine.status === 401 ? 'The bot token is wrong. Make a new one in the Discord Developer Portal.' : 'Could not reach Discord.' }, 502);
+      if (!mine.ok) return reply({ error: mine.status === 401 ? `The bot token is wrong (${tokenShape(token)}). Make a new one in the Discord Developer Portal.` : 'Could not reach Discord.' }, 502);
       if (!mine.data?.length) return reply({ error: 'The bot is not in your server yet. Add it with the invite link first.' }, 409);
       guildId = mine.data[0].id;
     }
