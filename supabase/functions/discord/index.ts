@@ -24,6 +24,16 @@ const DISCORD_ERRORS: Record<number, string> = {
   50035: "Discord didn't accept that message. Check the length and try again.",
 };
 
+// The project's own secret key, which Supabase gives every function (newer projects use SUPABASE_SECRET_KEYS).
+function serverKey(): string {
+  try {
+    const keys = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}');
+    const key = keys.default ?? Object.values(keys)[0];
+    if (typeof key === 'string' && key) return key;
+  } catch { /* fall back to the older key below */ }
+  return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+}
+
 function reply(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 }
@@ -36,7 +46,7 @@ Deno.serve(async (req) => {
 
   try {
     // Who is asking, and are they allowed?
-    const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+    const db = createClient(Deno.env.get('SUPABASE_URL')!, serverKey(), {
       auth: { persistSession: false, autoRefreshToken: false },
     });
     const jwt = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');

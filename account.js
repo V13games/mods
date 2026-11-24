@@ -26,7 +26,7 @@ async function start() {
     return;
   }
   let createClient;
-  try { ({ createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/+esm')); }
+  try { ({ createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/+esm')); }
   catch { state('error'); return; }
   const sb = createClient(SB_URL, SB_KEY, { auth: { flowType: 'pkce', persistSession: true, detectSessionInUrl: true } });
 

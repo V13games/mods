@@ -99,6 +99,7 @@ if (S.discord) {
 // Accounts (log in with GitHub or Google) are on once both Supabase settings are filled in.
 S.supabase_url = (S.supabase_url || '').replace(/\/+$/, '');
 const ACCOUNTS = !!(S.supabase_url && S.supabase_key);
+const LOGINS = list(S.logins || 'github, google').map(x => x.toLowerCase()); // which log in buttons to show
 
 // A link from a content file: web addresses stay as they are, site files get the right ../ in front.
 function href(u, root) {
@@ -718,8 +719,8 @@ ${pageHero({ name: 'Account', color: GAME_COLORS.other, label: 'GitHub or Google
         <p class="big-lede">Log in or make an account</p>
         <p class="note">Use GitHub or Google. The first time you log in, your account is made.</p>
         <div class="play-row">
-          <button type="button" class="btn big" data-login="github">${GITHUB_ICON}Continue with GitHub</button>
-          <button type="button" class="btn ghost big" data-login="google">${GOOGLE_ICON}Continue with Google</button>
+          ${LOGINS.includes('github') ? `<button type="button" class="btn big" data-login="github">${GITHUB_ICON}Continue with GitHub</button>` : ''}
+          ${LOGINS.includes('google') ? `<button type="button" class="btn ghost big" data-login="google">${GOOGLE_ICON}Continue with Google</button>` : ''}
         </div>
         <p class="note send-status" data-login-status></p>
       </div>

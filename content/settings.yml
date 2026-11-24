@@ -34,8 +34,11 @@ games_text: Free games you play in your browser. Nothing to install.
 # Both come from Supabase: Project Settings > API (the Project URL, and the publishable or anon key).
 # These are made to be public. Never put a secret key here.
 # While these are empty, there is no Log in link.
-supabase_url:
-supabase_key:
+supabase_url: https://jcdylajabmqmlyfnzghe.supabase.co
+supabase_key: sb_publishable_s5UPIMSiQat2KEuS3h7OOw_FnhNo25O
+
+# Which log in buttons to show (each must also be switched on in Supabase: Authentication > Sign In / Providers).
+logins: github
 
 # Where this site lives. Only change it if the site moves.
 url: https://v13games.github.io/mods/

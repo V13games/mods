@@ -84,3 +84,13 @@ $$;
 
 revoke all on function public.my_profile() from public, anon;
 grant execute on function public.my_profile() to authenticated;
+
+-- Who may touch what. Logged-in people can read their own profile (the policy above); the bot code
+-- (service_role) reads profiles and writes the post log. Nobody else gets anything.
+grant usage on schema public to authenticated, service_role;
+grant select on public.profiles to authenticated;
+grant select, insert, update on public.profiles to service_role;
+grant select, insert on public.discord_posts to service_role;
+grant select on public.owner_logins to service_role;
+revoke all on public.owner_logins, public.discord_posts from anon, authenticated;
+revoke insert, update, delete on public.profiles from anon, authenticated;
