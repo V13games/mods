@@ -1,0 +1,24 @@
+# Settings for the whole site. Change the text after a colon, then commit. Lines starting with # are notes.
+
+# The name at the top left and in the footer.
+name: Project Neutral
+
+# A line about the site. It shows when someone shares a link to it (on Discord, Google and so on).
+description: Mods and plugins for FiveM, Minecraft and more, made by Project Neutral.
+
+# Your Discord invite link, like https://discord.gg/abc123
+# Make one that never expires: in Discord, Invite People > Edit invite link > Expire after: Never.
+# With this filled in, the site gets Join Discord buttons and shows how many people are online.
+discord:
+
+# The text in the Discord box on the front page.
+join_text: New releases, updates and help all happen on the Discord. Come say hi.
+
+# Your games site, linked in the footer.
+games_site: https://v13games.github.io/
+
+# The filter buttons on the front page, in this order. A mod for a new game adds its own button by itself.
+categories: FiveM, Minecraft, Other
+
+# Where this site lives. Only change it if the site moves.
+url: https://v13games.github.io/mods/
