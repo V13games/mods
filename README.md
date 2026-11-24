@@ -70,5 +70,9 @@ message, pick a channel, and the Project Neutral bot posts it on the Discord wit
 - Logins and accounts are run by Supabase. The website only needs `supabase_url` and `supabase_key` in `content/settings.yml`.
 - `supabase/setup.sql` makes the accounts tables. The GitHub account **V13games** becomes owner the first time it logs in.
 - `supabase/functions/discord` is the bot code. Its secrets (the bot token) live in Supabase, never in this project.
+- `logins` in `content/settings.yml` picks which log in buttons show (`github, google`).
+- The Privacy and Terms pages are `content/pages/privacy.md` and `terms.md`. Google's login needs both.
+- Where things live: Supabase project `jcdylajabmqmlyfnzghe`, Discord app "Project Neutral" (private bot),
+  GitHub login app "Project Neutral" (GitHub > Settings > Developer settings), Google Cloud project `project-neutral-515720`.
 - To make someone an admin, run this in Supabase's SQL Editor:
   `update public.profiles set role = 'admin' where github_login = 'their-github-name';`
