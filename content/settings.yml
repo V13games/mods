@@ -38,7 +38,7 @@ supabase_url: https://jcdylajabmqmlyfnzghe.supabase.co
 supabase_key: sb_publishable_s5UPIMSiQat2KEuS3h7OOw_FnhNo25O
 
 # Which log in buttons to show (each must also be switched on in Supabase: Authentication > Sign In / Providers).
-logins: github
+logins: github, google
 
 # Where this site lives. Only change it if the site moves.
 url: https://v13games.github.io/mods/
